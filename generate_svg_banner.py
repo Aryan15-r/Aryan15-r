@@ -15,7 +15,6 @@ def process_dither(image_path, dark_mode=True, grid_w=300, grid_h=340):
     gray_np = np.array(gray, dtype=float)
     
     if dark_mode:
-        # In dark mode: segment background out, dots draw the lit subject on dark panel
         intensity = gray_np.copy()
         intensity[bg_mask] = 0.0
         
@@ -23,7 +22,6 @@ def process_dither(image_path, dark_mode=True, grid_w=300, grid_h=340):
         intensity_img = ImageOps.autocontrast(intensity_img, cutoff=1)
         enhancer = Image.fromarray(np.clip(np.array(intensity_img, dtype=float) * 1.25, 0, 255).astype(np.uint8))
     else:
-        # In light mode: dots draw dark features of photo on light panel
         intensity_img = ImageOps.invert(gray)
         intensity_img = ImageOps.autocontrast(intensity_img, cutoff=1)
         enhancer = Image.fromarray(np.clip(np.array(intensity_img, dtype=float) * 1.3, 0, 255).astype(np.uint8))
@@ -84,14 +82,14 @@ def generate_svg_banner(image_path, output_path, details, dark_mode=True):
 
     info_rows = [
         ("Subject", details.get("name", "Aryan"), text_primary, "700"),
-        ("Role", details.get("role", "Full-Stack & Flutter Developer"), chrome_color, "700"),
+        ("Role", details.get("role", "Full-Stack, Flutter & Discord Bot Dev"), chrome_color, "700"),
         ("Origin", details.get("location", "India"), text_primary, "400"),
         ("Education", details.get("education", "B.Tech Computer Science"), text_primary, "400"),
         ("Status", details.get("status", "Building + Learning + Shipping"), accent_color, "500"),
         ("ToolChain", details.get("toolchain", "VS Code · Git · Android Studio · Figma"), text_primary, "400"),
-        ("Core.Lang", details.get("languages", "Dart · Python · JavaScript · C++"), text_primary, "400"),
-        ("Core.Frontend", details.get("frontend", "Flutter · React · HTML5/CSS3"), text_primary, "400"),
-        ("Core.Backend", details.get("backend", "Node.js · Firebase · REST APIs"), text_primary, "400"),
+        ("Core.Lang", details.get("languages", "Dart · Python · JavaScript · HTML/CSS"), text_primary, "400"),
+        ("Core.Frontend", details.get("frontend", "Flutter · HTML5/CSS3 · React"), text_primary, "400"),
+        ("Core.Backend", details.get("backend", "Node.js · Firebase · Discord.js"), text_primary, "400"),
         ("Core.Database", details.get("database", "Cloud Firestore · PostgreSQL"), text_primary, "400"),
         ("Core.Infra", details.get("infra", "GitHub Actions · Vercel · Docker"), text_primary, "400"),
     ]
@@ -115,7 +113,7 @@ def generate_svg_banner(image_path, output_path, details, dark_mode=True):
     handle = details.get("username", "Aryan15-r")
     email = details.get("email", "minecraftidaryan72@gmail.com")
     linkedin = details.get("linkedin", "linkedin.com/in/aryan15-r")
-    portfolio = details.get("portfolio", "aryan15-r.github.io")
+    portfolio = details.get("portfolio", "coming soon")
     
     social_svg = f'''
   <line x1="470" y1="{social_y-15}" x2="1135" y2="{social_y-15}" stroke="{border_color}" stroke-width="1" />
@@ -187,7 +185,7 @@ def generate_svg_banner(image_path, output_path, details, dark_mode=True):
 
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(svg_content)
-    print(f"Generated optimized SVG: {output_path} ({len(dots)} dither dots)")
+    print(f"Generated updated SVG with custom details: {output_path}")
 
 if __name__ == '__main__':
     img_path = r"C:\Users\Param\.gemini\antigravity-ide\brain\a5c41e62-badf-490b-9048-ecdd664962ae\media__1786098354741.png"
@@ -196,19 +194,20 @@ if __name__ == '__main__':
     details = {
         "name": "Aryan",
         "username": "Aryan15-r",
-        "role": "Full-Stack & Flutter Developer",
+        "role": "Full-Stack, Flutter & Discord Bot Dev",
         "location": "India",
         "education": "B.Tech Computer Science",
         "status": "Building + Learning + Shipping",
         "toolchain": "VS Code · Git · Android Studio · Figma",
-        "languages": "Dart · Python · JavaScript · C++",
-        "frontend": "Flutter · React · HTML5/CSS3",
-        "backend": "Node.js · Firebase · REST APIs",
+        "languages": "Dart · Python · JavaScript · HTML/CSS",
+        "frontend": "Flutter · HTML5/CSS3 · React",
+        "backend": "Node.js · Firebase · Discord.js",
         "database": "Cloud Firestore · PostgreSQL",
         "infra": "GitHub Actions · Vercel · Docker",
         "email": "minecraftidaryan72@gmail.com",
         "linkedin": "linkedin.com/in/aryan15-r",
-        "portfolio": "aryan15-r.github.io"
+        "portfolio": "coming soon",
+        "instagram": "_redu.aryan"
     }
     
     generate_svg_banner(img_path, os.path.join(out_dir, "dark.svg"), details, dark_mode=True)

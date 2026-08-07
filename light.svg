@@ -423,8 +423,8 @@
   <line x1="543" y1="145" x2="1085" y2="145" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
   <text x="1135" y="150" fill="#0F172A" font-size="14" font-weight="700" text-anchor="end" textLength="42" lengthAdjust="spacingAndGlyphs">Aryan</text>
   <text x="470" y="178" fill="#475569" font-size="14">Role</text>
-  <line x1="516" y1="173" x2="885" y2="173" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="1135" y="178" fill="#0891B2" font-size="14" font-weight="700" text-anchor="end" textLength="255" lengthAdjust="spacingAndGlyphs">Full-Stack & Flutter Developer</text>
+  <line x1="516" y1="173" x2="829" y2="173" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
+  <text x="1135" y="178" fill="#0891B2" font-size="14" font-weight="700" text-anchor="end" textLength="314" lengthAdjust="spacingAndGlyphs">Full-Stack, Flutter & Discord Bot Dev</text>
   <text x="470" y="206" fill="#475569" font-size="14">Origin</text>
   <line x1="534" y1="201" x2="1085" y2="201" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
   <text x="1135" y="206" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="42" lengthAdjust="spacingAndGlyphs">India</text>
@@ -438,14 +438,14 @@
   <line x1="561" y1="285" x2="821" y2="285" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
   <text x="1135" y="290" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="323" lengthAdjust="spacingAndGlyphs">VS Code · Git · Android Studio · Figma</text>
   <text x="470" y="318" fill="#475569" font-size="14">Core.Lang</text>
-  <line x1="561" y1="313" x2="869" y2="313" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="1135" y="318" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="272" lengthAdjust="spacingAndGlyphs">Dart · Python · JavaScript · C++</text>
+  <line x1="561" y1="313" x2="829" y2="313" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
+  <text x="1135" y="318" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="314" lengthAdjust="spacingAndGlyphs">Dart · Python · JavaScript · HTML/CSS</text>
   <text x="470" y="346" fill="#475569" font-size="14">Core.Frontend</text>
   <line x1="597" y1="341" x2="901" y2="341" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="1135" y="346" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="238" lengthAdjust="spacingAndGlyphs">Flutter · React · HTML5/CSS3</text>
+  <text x="1135" y="346" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="238" lengthAdjust="spacingAndGlyphs">Flutter · HTML5/CSS3 · React</text>
   <text x="470" y="374" fill="#475569" font-size="14">Core.Backend</text>
-  <line x1="588" y1="369" x2="885" y2="369" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="1135" y="374" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="255" lengthAdjust="spacingAndGlyphs">Node.js · Firebase · REST APIs</text>
+  <line x1="588" y1="369" x2="877" y2="369" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
+  <text x="1135" y="374" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="264" lengthAdjust="spacingAndGlyphs">Node.js · Firebase · Discord.js</text>
   <text x="470" y="402" fill="#475569" font-size="14">Core.Database</text>
   <line x1="597" y1="397" x2="901" y2="397" stroke="#475569" stroke-dasharray="2,4" stroke-opacity="0.4" />
   <text x="1135" y="402" fill="#0F172A" font-size="14" font-weight="400" text-anchor="end" textLength="238" lengthAdjust="spacingAndGlyphs">Cloud Firestore · PostgreSQL</text>
@@ -464,7 +464,7 @@
   <text x="600" y="518" fill="#0F172A" font-size="14">linkedin.com/in/aryan15-r</text>
 
   <text x="820" y="518" fill="#475569" font-size="14">Grid.Portfolio</text>
-  <text x="940" y="518" fill="#10B981" font-size="14">aryan15-r.github.io</text>
+  <text x="940" y="518" fill="#10B981" font-size="14">coming soon</text>
 
 
 </svg>
