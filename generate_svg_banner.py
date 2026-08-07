@@ -1,6 +1,7 @@
 import os
 import sys
 import math
+import html
 import numpy as np
 from PIL import Image, ImageOps, ImageFilter
 
@@ -105,15 +106,17 @@ def generate_svg_banner(image_path, output_path, details, dark_mode=True):
         leader_line = f'<line x1="{lbl_w+10}" y1="{ry-5}" x2="{val_w-10}" y2="{ry-5}" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />' if val_w > lbl_w + 20 else ''
         
         val_length = len(val) * 8.5
-        row_svg_lines.append(f'''  <text x="470" y="{ry}" fill="{text_secondary}" font-size="14">{label}</text>
+        escaped_val = html.escape(val)
+        escaped_label = html.escape(label)
+        row_svg_lines.append(f'''  <text x="470" y="{ry}" fill="{text_secondary}" font-size="14">{escaped_label}</text>
   {leader_line}
-  <text x="1135" y="{ry}" fill="{color}" font-size="14" font-weight="{weight}" text-anchor="end" textLength="{val_length:.0f}" lengthAdjust="spacingAndGlyphs">{val}</text>''')
+  <text x="1135" y="{ry}" fill="{color}" font-size="14" font-weight="{weight}" text-anchor="end" textLength="{val_length:.0f}" lengthAdjust="spacingAndGlyphs">{escaped_val}</text>''')
 
     social_y = row_y_start + len(info_rows) * row_height + 15
-    handle = details.get("username", "Aryan15-r")
-    email = details.get("email", "minecraftidaryan72@gmail.com")
-    linkedin = details.get("linkedin", "linkedin.com/in/aryan15-r")
-    portfolio = details.get("portfolio", "coming soon")
+    handle = html.escape(details.get("username", "Aryan15-r"))
+    email = html.escape(details.get("email", "minecraftidaryan72@gmail.com"))
+    linkedin = html.escape(details.get("linkedin", "linkedin.com/in/aryan15-r"))
+    portfolio = html.escape(details.get("portfolio", "coming soon"))
     
     social_svg = f'''
   <line x1="470" y1="{social_y-15}" x2="1135" y2="{social_y-15}" stroke="{border_color}" stroke-width="1" />
@@ -185,7 +188,7 @@ def generate_svg_banner(image_path, output_path, details, dark_mode=True):
 
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(svg_content)
-    print(f"Generated updated SVG with custom details: {output_path}")
+    print(f"Generated XML-valid SVG: {output_path}")
 
 if __name__ == '__main__':
     img_path = r"C:\Users\Param\.gemini\antigravity-ide\brain\a5c41e62-badf-490b-9048-ecdd664962ae\media__1786098354741.png"
