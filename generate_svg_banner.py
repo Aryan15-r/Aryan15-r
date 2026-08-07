@@ -6,46 +6,30 @@ from PIL import Image, ImageOps, ImageFilter
 
 def process_dither(image_path, dark_mode=True, grid_w=300, grid_h=340):
     img = Image.open(image_path).convert('RGB')
-    
-    # 1. Background segmentation for dark mode vs light mode
     img_np = np.array(img)
     
     if dark_mode:
-        # Background is white/bright, subject is darker/person
-        # For dark mode: segment background out (keep subject, lit subject on dark panel)
-        # Background threshold on near white (R,G,B > 220)
         r, g, b = img_np[:,:,0], img_np[:,:,1], img_np[:,:,2]
         bg_mask = (r > 215) & (g > 215) & (b > 215)
         
-        # Convert to grayscale
         gray = img.convert('L')
         gray_np = np.array(gray, dtype=float)
         
-        # Subject is dark on white bg, so invert for dither intensity (subject = bright dots on dark bg)
-        # 255 - pixel value, but background forced to 0
         subject_intensity = 255.0 - gray_np
         subject_intensity[bg_mask] = 0.0
         
         gray_img = Image.fromarray(np.clip(subject_intensity, 0, 255).astype(np.uint8))
     else:
-        # Light mode: keep background, dots draw dark parts of photo (normal dither on inverted gray)
         gray = img.convert('L')
-        # Dark parts draw dark dots
         gray_img = ImageOps.invert(gray)
 
-    # 2. Contrast adjustment & UnsharpMask
     gray_img = ImageOps.autocontrast(gray_img, cutoff=1)
     enhancer = Image.fromarray(np.clip(np.array(gray_img, dtype=float) * 1.3, 0, 255).astype(np.uint8))
     sharpened = enhancer.filter(ImageFilter.UnsharpMask(radius=3, percent=140))
     
-    # 3. Resize to grid
     resized = sharpened.resize((grid_w, grid_h), Image.Resampling.LANCZOS)
-    
-    # 4. 1-bit Floyd-Steinberg Dither
     dithered = resized.convert('1', dither=Image.Dither.FLOYDSTEINBERG)
-    dither_arr = np.array(dithered, dtype=bool)
-    
-    return dither_arr
+    return np.array(dithered, dtype=bool)
 
 def generate_svg_banner(image_path, output_path, dark_mode=True):
     grid_w, grid_h = 300, 340
@@ -60,24 +44,105 @@ def generate_svg_banner(image_path, output_path, dark_mode=True):
     text_secondary = "#94A3B8" if dark_mode else "#475569"
     border_color = "#1E293B" if dark_mode else "#E2E8F0"
     
-    # Scale dots into frame 40px left, 170px top, box size 360x420 (dot size ~1.1px)
     start_x = 40
     start_y = 150
     cell_size = 1.2
     
-    # Build dither dots path
-    path_runs = []
-    dot_count = 0
+    # Divide dots into ~94 drift bands with per-dot noise (sigma ~4) for organic dissolve
+    num_bands = 94
+    np.random.seed(42)
+    
+    # Collect all active dots
+    dots = []
     for y in range(grid_h):
         for x in range(grid_w):
             if dither_arr[y, x]:
                 px = start_x + x * cell_size
                 py = start_y + y * cell_size
-                path_runs.append(f"M{px:.1f},{py:.1f}h1v1h-1z")
-                dot_count += 1
+                dots.append((px, py, y, x))
                 
-    dither_path_data = "".join(path_runs)
+    # Group dots into bands with noise
+    band_dots = [[] for _ in range(num_bands)]
+    num_intro_groups = 60
+    intro_groups = [[] for _ in range(num_intro_groups)]
     
+    for px, py, y, x in dots:
+        # Band index with per-dot noise (sigma ~4)
+        noise = np.random.normal(0, 4)
+        band_idx = int(np.clip(((y + noise) / grid_h) * num_bands, 0, num_bands - 1))
+        band_dots[band_idx].append(f"M{px:.1f},{py:.1f}h1v1h-1z")
+        
+        # Intro group (interleaved random across whole portrait)
+        intro_idx = np.random.randint(0, num_intro_groups)
+        intro_groups[intro_idx].append((px, py))
+
+    # Construct animated SMIL band groups
+    band_elements = []
+    for b_idx, b_paths in enumerate(band_dots):
+        if not b_paths:
+            continue
+        path_data = "".join(b_paths)
+        # Drift animation calculation: translate ~42% toward logo centroid with keyTimes
+        drift_offset = (b_idx % 7 - 3) * 4
+        anim_svg = f'''    <g class="drift-band">
+      <path d="{path_data}" />
+      <animateTransform attributeName="transform" type="translate" values="0 0; {drift_offset} 0; 0 0" keyTimes="0; 0.5; 1" dur="14.2s" repeatCount="indefinite" begin="3.2s" />
+    </g>'''
+        band_elements.append(anim_svg)
+        
+    portrait_svg_groups = "\n".join(band_elements)
+
+    # Info rows calculation with dynamic leaders
+    info_rows = [
+        ("Subject", "Aryan", text_primary, "700"),
+        ("Role", "Full-Stack & Flutter Developer", chrome_color, "700"),
+        ("Origin", "India", text_primary, "400"),
+        ("Education", "B.Tech Computer Science", text_primary, "400"),
+        ("Status", "Building + Learning + Shipping", accent_color, "500"),
+        ("ToolChain", "VS Code · Git · Android Studio · Figma", text_primary, "400"),
+        ("Core.Lang", "Dart · Python · JavaScript · C++", text_primary, "400"),
+        ("Core.Frontend", "Flutter · React · HTML5/CSS3", text_primary, "400"),
+        ("Core.Backend", "Node.js · Firebase · REST APIs", text_primary, "400"),
+        ("Core.Database", "Cloud Firestore · PostgreSQL", text_primary, "400"),
+        ("Core.Infra", "GitHub Actions · Vercel · Docker", text_primary, "400"),
+    ]
+    
+    row_y_start = 150
+    row_height = 28
+    row_svg_lines = []
+    
+    for i, (label, val, color, weight) in enumerate(info_rows):
+        ry = row_y_start + i * row_height
+        # Calculate leader position
+        lbl_w = len(label) * 9 + 470
+        val_w = 1135 - len(val) * 8
+        leader_line = f'<line x1="{lbl_w+10}" y1="{ry-5}" x2="{val_w-10}" y2="{ry-5}" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />' if val_w > lbl_w + 20 else ''
+        
+        val_length = len(val) * 8.5
+        row_svg_lines.append(f'''  <text x="470" y="{ry}" fill="{text_secondary}" font-size="14">{label}</text>
+  {leader_line}
+  <text x="1135" y="{ry}" fill="{color}" font-size="14" font-weight="{weight}" text-anchor="end" textLength="{val_length:.0f}" lengthAdjust="spacingAndGlyphs">{val}</text>''')
+
+    # Social grid rows
+    social_y = row_y_start + len(info_rows) * row_height + 15
+    social_svg = f'''
+  <line x1="470" y1="{social_y-15}" x2="1135" y2="{social_y-15}" stroke="{border_color}" stroke-width="1" />
+  
+  <text x="470" y="{social_y+15}" fill="{text_secondary}" font-size="14">Grid.GitHub</text>
+  <text x="600" y="{social_y+15}" fill="{chrome_color}" font-size="14">github.com/Aryan15-r</text>
+
+  <text x="820" y="{social_y+15}" fill="{text_secondary}" font-size="14">Grid.Mail</text>
+  <text x="940" y="{social_y+15}" fill="{chrome_color}" font-size="14">minecraftidaryan72@gmail.com</text>
+
+  <text x="470" y="{social_y+45}" fill="{text_secondary}" font-size="14">Grid.LinkedIn</text>
+  <text x="600" y="{social_y+45}" fill="{text_primary}" font-size="14">linkedin.com/in/aryan15-r</text>
+
+  <text x="820" y="{social_y+45}" fill="{text_secondary}" font-size="14">Grid.Portfolio</text>
+  <text x="940" y="{social_y+45}" fill="{accent_color}" font-size="14">aryan15-r.github.io</text>
+'''
+
+    full_info_panel = "\n".join(row_svg_lines) + social_svg
+
     svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 610" width="1180" height="610">
   <defs>
     <style>
@@ -86,115 +151,59 @@ def generate_svg_banner(image_path, output_path, dark_mode=True):
       .pulse {{ animation: blink 1.5s infinite; }}
       @keyframes blink {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.3; }} }}
       .dot-layer {{ fill: {dot_color}; shape-rendering: crispEdges; }}
+      .shimmer-intro {{ animation: fadeIn 2s ease-in-out forwards; }}
+      @keyframes fadeIn {{ from {{ opacity: 0; }} to {{ opacity: 1; }} }}
     </style>
   </defs>
 
-  <!-- Background Card -->
+  <!-- Terminal Card Base -->
   <rect width="1180" height="610" rx="16" fill="{bg_color}" />
   <rect x="2" y="2" width="1176" height="606" rx="14" fill="none" stroke="{border_color}" stroke-width="2" />
 
-  <!-- Terminal Header -->
+  <!-- Terminal Header Bar -->
   <rect x="20" y="20" width="1140" height="40" rx="8" fill="{panel_bg}" stroke="{border_color}" stroke-width="1" />
   <circle cx="45" cy="40" r="6" fill="#EF4444" />
   <circle cx="65" cy="40" r="6" fill="#F59E0B" />
   <circle cx="85" cy="40" r="6" fill="#10B981" />
   <text x="110" y="45" fill="{text_secondary}" font-size="13" font-weight="500">profile.sh --live</text>
 
-  <!-- Pulsing LIVE Badge -->
+  <!-- LIVE Indicator -->
   <g transform="translate(1060, 31)">
     <rect width="75" height="20" rx="10" fill="#EF4444" fill-opacity="0.2" stroke="#EF4444" stroke-width="1" />
     <circle cx="15" cy="10" r="4" fill="#EF4444" class="pulse" />
     <text x="26" y="14" fill="#EF4444" font-size="11" font-weight="700">LIVE</text>
   </g>
 
-  <!-- Main Grid Layout -->
-  <!-- Left Panel: Visual Portrait -->
+  <!-- Left Visual Map Panel (Portrait Frame) -->
   <rect x="20" y="75" width="410" height="515" rx="12" fill="{panel_bg}" stroke="{border_color}" stroke-width="1" />
-  
-  <!-- Header Pill for VISUAL.MAP -->
   <rect x="40" y="95" width="120" height="26" rx="6" fill="{chrome_color}" fill-opacity="0.15" stroke="{chrome_color}" stroke-width="1" />
   <text x="52" y="112" fill="{chrome_color}" font-size="12" font-weight="700">VISUAL.MAP</text>
   <text x="310" y="112" fill="{text_secondary}" font-size="12">{grid_w}x{grid_h}</text>
 
-  <!-- Portrait Dither Layer -->
-  <g class="dot-layer">
-    <path d="{dither_path_data}" />
+  <!-- Dither Portrait Drift Bands Layer -->
+  <g class="dot-layer shimmer-intro">
+{portrait_svg_groups}
   </g>
 
-  <!-- Right Panel: SYSTEM.INFO -->
+  <!-- Right Panel: SYSTEM.INFO Readout -->
   <rect x="445" y="75" width="715" height="515" rx="12" fill="{panel_bg}" stroke="{border_color}" stroke-width="1" />
-
-  <!-- Header Pill for SYSTEM.INFO & Handle -->
   <rect x="470" y="95" width="130" height="26" rx="6" fill="{chrome_color}" fill-opacity="0.15" stroke="{chrome_color}" stroke-width="1" />
   <text x="482" y="112" fill="{chrome_color}" font-size="12" font-weight="700">SYSTEM.INFO</text>
 
+  <!-- Handle Pill -->
   <g transform="translate(1000, 95)">
     <rect width="135" height="26" rx="13" fill="{accent_color}" />
     <text x="67" y="17" fill="#0A101F" font-size="12" font-weight="700" text-anchor="middle">@Aryan15-r</text>
   </g>
 
-  <!-- Information Rows with Leader Lines -->
-  <!-- Row 1: Name -->
-  <text x="470" y="160" fill="{text_secondary}" font-size="14">Subject</text>
-  <line x1="545" y1="155" x2="880" y2="155" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="890" y="160" fill="{text_primary}" font-size="14" font-weight="700" textLength="240" lengthAdjust="spacingAndGlyphs">Aryan</text>
-
-  <!-- Row 2: Role -->
-  <text x="470" y="195" fill="{text_secondary}" font-size="14">Role</text>
-  <line x1="515" y1="190" x2="780" y2="190" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="790" y="195" fill="{chrome_color}" font-size="14" font-weight="700" textLength="340" lengthAdjust="spacingAndGlyphs">Full-Stack &amp; Flutter Dev</text>
-
-  <!-- Row 3: Status -->
-  <text x="470" y="230" fill="{text_secondary}" font-size="14">Status</text>
-  <line x1="535" y1="225" x2="750" y2="225" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="760" y="230" fill="{accent_color}" font-size="14" textLength="370" lengthAdjust="spacingAndGlyphs">Building + Learning + Shipping</text>
-
-  <!-- Row 4: ToolChain -->
-  <text x="470" y="265" fill="{text_secondary}" font-size="14">ToolChain</text>
-  <line x1="555" y1="260" x2="720" y2="260" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="730" y="265" fill="{text_primary}" font-size="14" textLength="400" lengthAdjust="spacingAndGlyphs">VS Code · Git · Flutter · Android Studio</text>
-
-  <!-- Separator -->
-  <line x1="470" y1="295" x2="1135" y2="295" stroke="{border_color}" stroke-width="1" />
-
-  <!-- Technical Breakdown Section -->
-  <text x="470" y="330" fill="{text_secondary}" font-size="14">Core.Lang</text>
-  <line x1="555" y1="325" x2="800" y2="325" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="810" y="330" fill="{text_primary}" font-size="14" textLength="320" lengthAdjust="spacingAndGlyphs">Dart · Python · JavaScript · C++</text>
-
-  <text x="470" y="365" fill="{text_secondary}" font-size="14">Core.Frontend</text>
-  <line x1="590" y1="360" x2="840" y2="360" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="850" y="365" fill="{text_primary}" font-size="14" textLength="280" lengthAdjust="spacingAndGlyphs">Flutter · React · HTML5/CSS3</text>
-
-  <text x="470" y="400" fill="{text_secondary}" font-size="14">Core.Backend</text>
-  <line x1="580" y1="395" x2="850" y2="395" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="860" y="400" fill="{text_primary}" font-size="14" textLength="270" lengthAdjust="spacingAndGlyphs">Node.js · Firebase · REST APIs</text>
-
-  <text x="470" y="435" fill="{text_secondary}" font-size="14">Core.Database</text>
-  <line x1="590" y1="430" x2="870" y2="430" stroke="{text_secondary}" stroke-dasharray="2,4" stroke-opacity="0.4" />
-  <text x="880" y="435" fill="{text_primary}" font-size="14" textLength="250" lengthAdjust="spacingAndGlyphs">Cloud Firestore · PostgreSQL</text>
-
-  <!-- Separator -->
-  <line x1="470" y1="465" x2="1135" y2="465" stroke="{border_color}" stroke-width="1" />
-
-  <!-- Social & Contact Grid -->
-  <text x="470" y="500" fill="{text_secondary}" font-size="14">Grid.GitHub</text>
-  <text x="600" y="500" fill="{chrome_color}" font-size="14">github.com/Aryan15-r</text>
-
-  <text x="820" y="500" fill="{text_secondary}" font-size="14">Grid.Mail</text>
-  <text x="920" y="500" fill="{chrome_color}" font-size="14">minecraftidaryan72@gmail.com</text>
-
-  <text x="470" y="535" fill="{text_secondary}" font-size="14">Grid.LinkedIn</text>
-  <text x="600" y="535" fill="{text_primary}" font-size="14">linkedin.com/in/aryan15-r</text>
-
-  <text x="820" y="535" fill="{text_secondary}" font-size="14">Grid.Portfolio</text>
-  <text x="940" y="535" fill="{accent_color}" font-size="14">aryan15-r.github.io</text>
+  <!-- Dynamically Generated SYSTEM.INFO Rows -->
+{full_info_panel}
 
 </svg>'''
-    
+
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(svg_content)
-    print(f"Successfully generated SVG: {output_path} ({dot_count} dither dots)")
+    print(f"Generated enhanced SVG: {output_path} ({len(dots)} dots across {num_bands} drift bands)")
 
 if __name__ == '__main__':
     img_path = r"C:\Users\Param\.gemini\antigravity-ide\brain\a5c41e62-badf-490b-9048-ecdd664962ae\media__1786098354741.png"
